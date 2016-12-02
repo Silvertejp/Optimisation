@@ -1,16 +1,17 @@
 set TOWNS := Antwerpen Arlon Brugge Gent Liege Mons Namur Sinsin Voeren Warnant Zeebrugge Zomergem;
 
-set ARCS :=  Zeebrugge Brugge
-	     Brugge    Zomergem
-	     Antwerpen Gent
-	     Gent      Zomergem
-	     Zomergem  Mons
- 	     Mons      Namur
-             Namur     Warnant
-	     Voeren    Liege
-	     Liege     Warnant
-             Warnant   Sinsin
-	     Sinsin    Arlon;
+set ARCS :=
+        Zeebrugge Brugge
+        Brugge    Zomergem
+        Antwerpen Gent
+        Gent      Zomergem
+        Zomergem  Mons
+        Mons      Namur
+        Namur     Warnant
+        Voeren    Liege
+        Liege     Warnant
+        Warnant   Sinsin
+        Sinsin    Arlon;
 
 set ARCSA := Warnant Sinsin;
 

@@ -6,19 +6,33 @@ model Belgium.mod;
 ## Load the data
 data Belgium.dat;
 
-## III 1
-##let slo["Voeren"]:=0.8*slo["Voeren"];
-##let sup["Voeren"]:=0.8*sup["Voeren"];
-
-## 
-
 ## Choose solver
 option solver "ampl_linux-intel32/snopt";
+
+## III 2
+#let sup["Arlon"]:=-1.45619;
+#let plo["Sinsin"]:=42;
+#let plo["Arlon"]:=42;
+
+## III 3
+let slo:=2*slo;
+let sup:=2*sup;
 
 ## Solve the model
 solve;
 
+
+
+
 ## Display results
-display f,c2,pi;
+display f["Voeren","Liege"],f["Zeebrugge","Brugge"];
 display s;
-display Active_Arc["Warnant","Sinsin"].dual;
+display Active_Equilibrium.slack;
+display Pressure.lb, pi, Pressure.ub;
+
+
+## III 1
+#let slo["Voeren"]:=0.8*slo["Voeren"];
+#let sup["Voeren"]:=0.8*sup["Voeren"];
+
+

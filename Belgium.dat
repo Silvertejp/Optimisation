@@ -1,0 +1,54 @@
+set TOWNS := Antwerpen Arlon Brugge Gent Liege Mons Namur Sinsin Voeren Warnant Zeebrugge Zomergem;
+
+set ARCS :=  Zeebrugge Brugge
+	     Brugge    Zomergem
+	     Antwerpen Gent
+	     Gent      Zomergem
+	     Zomergem  Mons
+ 	     Mons      Namur
+             Namur     Warnant
+	     Voeren    Liege
+	     Liege     Warnant
+             Warnant   Sinsin
+	     Sinsin    Arlon;
+
+set ARCSA := Warnant Sinsin;
+
+
+# town parameters,
+param:     slo       sup     plo   pup    c :=
+Antwerpen  -Infinity -4.034  30    80.0   0 
+Arlon 	   -Infinity -0.222  0     66.2   0 
+Brugge 	   -Infinity -3.918  30    80.0   0 
+Gent 	   -Infinity -5.256  30    80.0   0 
+Liege 	   -Infinity -6.365  30    66.2   0 
+Mons 	   -Infinity -6.848  0     66.2   0 
+Namur 	   -Infinity -2.120  0     66.2   0 
+Sinsin 	   0         0 	     0     63.0   0 
+Voeren 	   20.344    22.012  50    66.2   1.68 
+Warnant    0 	     0       0     66.2   0 
+Zeebrugge  8.870     11.594  0     77.0   2.28 
+Zomergem   0 	     0 	     0     80.0   0;
+
+# arc parameters,
+param:           D       L    :=
+Zeebrugge Brugge 890.0   12.0 
+Brugge Zomergem  890.0   26.0 
+Antwerpen Gent   590.1   39.0 
+Gent Zomergem    590.1   14.0 
+Zomergem Mons    890.0   75.0
+Mons Namur       890.0   55.0
+Namur Warnant    890.0   42.0
+Voeren Liege     890.0   22.0 
+Liege Warnant    590.1   25.0 
+Warnant Sinsin   315.5   40.0 
+Sinsin Arlon     315.5   98.0;
+
+
+param T  := 281.15;   
+param e  := 0.05;   
+param den:= 0.616; 
+param z  := 0.8;
+
+
+

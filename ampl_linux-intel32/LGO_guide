@@ -1,0 +1,1112 @@
+
+AMPL-LGO User's Guide
+
+Written by
+Janos D. Pinter
+Pinter Consulting Services, Inc.
+
+Contributions by
+David M. Gay
+AMPL Optimization, Inc.
+
+Current document version: 2015-01-09
+
+
+(C) COPYRIGHT NOTICE
+
+AMPL - A Modeling Language for Mathematical Programming
+(C) AMPL Optimization, Inc., www.ampl.com
+
+LGO Solver Suite for Global and Local Nonlinear Optimization
+(C) Pinter Consulting Services, Inc., www.pinterconsulting.com
+
+All rights reserved.
+
+Please contact Janos D. Pinter at janos.d.pinter@gmail.com if you wish
+to cite or use the contents of this document in any form.
+
+
+1) AMPL
+
+AMPL is a language for mathematical programming that greatly facilitates
+the formulation of optimization models and the generation of the requisite
+computational data structures. AMPL enables optimization model development
+in a natural, concise, and scalable fashion; it also supports the seamless
+invocation of various solver engines to handle the resulting optimization
+models.
+
+AMPL integrates a modeling language for describing a model consisting of
+variables, objectives, and constraints, all of which may involve sets and
+parameters that can be supplied separately; facilities for supplying data
+(values for sets and parameters in the model); a command language for
+browsing models and analyzing results; and a scripting language for
+gathering and manipulating data and for implementing iterative optimization
+schemes.  All listed language components use the same concepts and syntax
+for streamlined application development, testing, deployment, and
+maintenance.
+
+AMPL has been extensively documented elsewhere. Therefore here we refer
+only to the AMPL book by Fourer, Gay, and Kernighan (2003) - as the
+primary source of information - and to the website of AMPL Optimization,
+Inc., www.ampl.com.
+
+From this website you can download a fully functional free AMPL trial
+version, with model size limitations set by AMPL Optimization, as well
+as all chapters of the AMPL book (in PDF file format).
+
+Let us note that the AMPL trial version already supports the development
+and exploration of non-trivial nonlinear optimization models.
+
+The AMPL software product is supported by AMPL Optimization, Inc. To
+obtain a licensed copy of AMPL, contact info@ampl.com. All questions
+related to AMPL should also be sent to info@ampl.com.
+
+
+2) Nonlinear Optimization Using LGO
+
+LGO is an integrated solver suite for general constrained nonlinear -
+global and local - optimization (NLO). Here we present a short formal
+introduction to the subject of NLO, and motivate the usage of a
+global-local NLO tool as an AMPL solver engine option.
+
+A large variety of quantitative decision problems in the applied sciences,
+engineering and economics can be described by constrained optimization
+models. In such models, the best decision is sought that satisfies all
+stated feasibility constraints and minimizes or maximizes the value of
+a given objective function.
+
+A generic constrained optimization model can be concisely stated as follows.
+
+(1)	minimize f(x) s.t. x belongs to the feasible set D.
+
+Here x is an n-vector of the real space R^n, and f is a scalar-valued
+objective function, f: R^n -> R.
+
+The set D is defined by box constraints and optionally defined general
+constraints.
+
+(2)	D={x: l <= x <= u, g(x) <= 0}.
+
+In (2) the vector inequalities are interpreted component-wise: both l and
+u are n-vectors of R^n and g denotes an m-vector function g: R^n -> R^m.
+
+Man-made objects and (manufacturing, transportation, distribution, crew
+assignment, etc.) systems often can be described by linear models - at
+least in their basic, without consideration given, e.g., to possible
+yes/no decisions, nonlinear functional relations, stochastic system
+features, and inherent fluctuations. In such cases, all model functions
+f and g are assumed to be linear.
+
+Natural - physical, chemical, biological, geological, environmental - as
+well as economic and societal systems are frequently characterized by
+nonlinear functional relations. Nonlinear decision models built upon such
+a description could possess multiple optima. In such multi-modal scenarios
+both the number and the quality of these (sub-)optima are often unknown.
+Hence, it is natural to consider optimization strategies that enable
+global scope search for the best possible numerical solution.
+
+Obviously, linear models can be viewed as a specal case of the vast NLO
+model-class. After suitable reformulation, the entire range of combinatorial
+optimization models can be seen as NLO - namely, global optimization -
+problems. (This fact per se hints at the theoretical complexity and
+potential numerical challenge of solving global NLO model instances).
+
+For the purposes of the present discussion, we will tacitly assume that in
+(1)-(2) at least some of the model functions f, g are nonlinear. We will
+also assume that all model functions f and g_1,...,g_m are continuous over
+the finite box-constrained region [l, u], and that the set D is non-empty.
+The set of box constraints is required, but the general constraints g may
+be absent.
+
+Due to the generality of model (1)-(2), the corresponding model-class
+includes many difficult instances. Some models can be highly nonlinear,
+and - as a consequence - may have locally optimal solutions, in addition
+to their true (global) solution(s).
+
+The above postulated key analytical assumptions guarantee that the globally
+optimal solution set X* of model (1)-(2) is non-empty. In other words, there
+exists a solution set X* (a subset of D) such that for all pairs (x*,x),
+where x* is chosen from X* and x is chosen from D, the relation f(x*) <= f(x)
+is valid. In most well-posed, practically motivated NLO models - arguably
+including the majority of real-world applications - X* consists only of a
+single globally optimal solution vector x*. There are exceptions, however
+when multiple global optima exist: in such cases additional considerations
+may be needed to choose among these solutions.
+
+In contrast to the definition of global optimality, a locally optimal solution
+x*_l is the best solution of model (1)-(2) with respect to (only) a certain
+neighbourhood of x*_l. Such a neighbourhood (a suitable subset of D) can be
+defined, e.g., by the intersection of a sufficiently small n-sphere S(x*_l)
+centered at x*_l and of the feasible set D.
+
+Traditional local scope nonlinear solvers will only find the absolutely best
+solution x* in an optimization model if launched from a point that lies in
+the 'basin of attraction' B(x*) of the global solution. Since a 'sufficiently
+close guess' of the global solution is not always available, local scope
+NLO methods - in general - can not guarantee the finding of x* (elements of
+X*) in highly nonlinear systems. We will illustrate this point later on by
+numerical examples.
+
+There exists a significant body of professional literature devoted to global
+and/or local NLO. Global NLO is typically referred to as global optimization
+(GO), while traditionally NLO was meant to deal with the topic of continuous
+local optimization (LO). The most notable category of LO problems is convex
+optimization and its generalizations: here all functions f and g are convex
+or generalized convex functions, respectively.
+
+To address the proper handling of - verifiably or potentially - multi-modal
+optimization problems, the LGO solver suite seamlessly integrates a suite of
+global and local search options. The acronym LGO abbreviates 'Lipschitz
+Global Optimizer'. This name corresponds to the initially developed (first)
+global solver component in LGO: over the years other algorithmic strategies
+have been added, including space-covering sampling, stochastic search and
+local constrained optimization methods.
+
+For an in-depth discussion of the theory and algorithms that serve as the
+basis of the globally convergent solver components in LGO, consult Pinter
+(1996). For discussions of GO software, tests and a range of applications
+cf. Pinter (1996, 2002, 2006, 2009), with many further references therein.
+These references mostly focus on the more recent research area of GO. Local
+scope NLO (LO) has been studied for a longer time, definitely so since the
+beginnings of modern Operations Research, and there exist many good topical
+books and other resources. The present discussion is mostly devoted to GO.
+
+The LGO solver suite can be used in a stand-alone mode, without relying on
+other solvers. LGO works directly with computable model function values,
+without a requirement for using higher order (gradient, Hessian,...) analytical
+information. As a rule, LGO will work robustly for models defined by (merely)
+continuous functions, even without smoothness requirements. Therefore LGO is
+particularly suitable to handle optimization models in which the available
+analytical information may be limited to computable function values, in the
+possible presence of a multi-extremal model structure.
+
+For a more detailed description of LGO, consult Pinter (1996, 2002, 2009).
+Registered AMPL-LGO users have access also to the current LGO user guide
+(Pinter Consulting Services, 2014). This document discusses the following
+topics:
+
+- Global vs. Local Optimization
+- The LGO Program System
+- LGO Solver Options
+- LGO Program Structure
+- Connectivity to Modeling Environments
+- LGO Input and Output Information: Model Formulation, Solution
+  and Result Analysis
+- Model Development and Solution Tips
+- LGO Benchmarking Test Results, Applications and Peer Reviews
+- References
+
+Hence, it can be a useful added source of information for AMPL-LGO users.
+
+Primary AMPL-LGO technical support is offered by AMPL Optimization,
+contact: support@ampl.com.
+
+For all specific questions, related to the LGO solver suite,
+contact: janos.d.pinter@gmail.com.
+
+
+3) Getting Started with AMPL
+
+The following description refers primarily to using AMPL and the LGO
+solver option (as well as several other NLO solvers discussed here)
+on a personal computer that runs under a current Microsoft Windows
+operating system, since such an environment has been used to test
+all the features and examples described in this document.
+
+Usage on other platforms and operating systems will be essentially the
+same, regarding all key AMPL and LGO functionality.
+
+AMPL can be launched in several ways as described below.
+
+First of all, AMPL can be invoked in command line mode, by double-
+clicking on the icon of the executable program ampl.exe in the AMPL
+work directory. (For example, a suitable work directory setting is
+C:\AMPL.) This opens up a  console window environment ('DOS box') to
+run AMPL.
+
+For example, if the model named branin.mod is located in the AMPL work
+directory, then
+
+ampl: model branin.mod;
+
+invokes this model. If the model also includes solver settings, then it
+is also solved directly after invoking the model. We will discuss this
+example model later on, including solver settings and some other options.
+
+As a second option, AMPL can be invoked using the scrolling window (sw)
+environment. Double-clicking on the sw.exe icon located in the AMPL
+work directory, the scrolling window appears with the prompt
+
+sw:
+
+Now ampl can be invoked by the command
+
+sw: ampl
+
+Following this - as an example -
+
+ampl: model branin.mod;
+
+works as summarized above.
+
+The scrolling window utility program is shipped with AMPL. The usage of sw
+supports simple text copy and paste operations, and thus may be preferred
+by users to the basic 'DOS box' style direct AMPL call.
+
+As a third option, AMPL can be invoked via the AMPL Integrated Development
+Environment (IDE). The AMPL IDE can be easily set up as an extension of a
+standard AMPL command-line installation. After its installation, it is
+available by double-clicking on the amplide.exe icon.
+
+As an example, the AMPL IDE can be installed in C:\AMPLIDE, so this is
+where amplide.exe can be found. In a default AMPL IDE installation, the
+core AMPL system is located in a separate \ampl subdirectory of the IDE
+installation directory. The plain command-line ampl application remains
+available for batch runs and for other usage as per user preferences.
+
+Access to the AMPL IDE is included with all purchases and trials of AMPL,
+and support is provided by contacting support@ampl.com. The IDE is available
+at www.ampl.com/products/ide/: the information summarized below is based
+on this webpage.
+
+The AMPL IDE provides a convenient modeling interface for AMPL users by
+offering an AMPL console window (command pane), a file navigation window,
+and a model development window (file editing pane) which supports work with
+multiple files. All installed solvers (located in the \ampl subdirectory)
+can be directly accessed. The AMPL IDE also includes a concise Help system.
+
+Key advantages of using the IDE include the following:
+- Integration of the AMPL command, editing, and navigation windows
+- Syntax highlighting for model and data files
+- Quick links to error locations (from the command window to the model
+  development window)
+- Consistent appearance and operation across computer platforms.
+
+The current version (at the time of writing this document, version 1.0) of
+the AMPL IDE supports all widely used (current) versions of Windows,
+Linux, and MacOS.
+
+The usage of AMPL using the AMPL IDE may be preferred by users who are
+accustomed to using applications supported by graphical user interface.
+In this document we will discuss examples developed and solved using the
+AMPL IDE.
+
+Assuming the usage of the AMPL IDE, after launching it one can navigate
+using its file navigation pane to the GOMODELS (Global Optimization model
+examples) directory. GOMODELS can be stored e.g. as a subdirectory of
+C:\AMPLIDE\ampl\MODELS (in plain AMPL installations, in C:\AMPL\MODELS).
+
+The GOMODELS collection is maintained by Pinter Consulting Services, and
+it is offered to all AMPL-LGO users. A number of the models included have
+been originally formulated by Elena Bobrovnikova, with some subsequent
+editing by David M. Gay. Models have been (are) added on an ongoing basis,
+and some further NLO model revisions have also been done by Janos D.
+Pinter.
+
+Several illustrative models from the GOMODELS collection will be discussed
+here. Numerous other model examples are available from AMPL Optimization
+and from other researchers and solver developers. New models are welcome
+and will be optionally added to the GOMODELS collection.
+
+Let us also note that - due to ongoing development and possible changes of
+the AMPL-LGO solver - the numerical results and related output cited in this
+document may change to some (secondary) extent.
+
+
+4) Getting Started with AMPL-LGO
+
+In order to use LGO as a solver option with AMPL, place the lgo.exe file
+in your AMPL installation (work) directory such as C:\AMPL (command line
+setup) or C:\AMPLIDE\ampl (AMPL IDE based setup). The lgo.exe solver
+engine is available from AMPL Optimization as a licensed solver option.
+
+As a simple introductory example of using AMPL with the LGO solver option,
+a classic test model originally proposed by Branin is used. This model
+can be found in the GOMODELS directory, see branin1.mod (we use branin1
+to distinguish from the earlier written AMPL model branin which is based
+on the original model formulation).
+
+The AMPL model code is shown below, with embedded comments (lines that
+start with #). It is assumed that readers are sufficiently familiar
+with AMPL, to be able to follow the illustrative models presented here.
+
+# branin1.mod
+# An illustrative global optimization model from the GOMODEL Library
+# Original AMPL code development (branin.mod) by Elena Bobrovnikova
+# Added modifications and explanatory notes by Janos D. Pinter
+
+# Key model characteristics
+# Number of variables: 2
+# Number of (lower and upper) bound constraints: 4
+# Number of general constraints: 1, see note below
+# Objective function: nonconvex
+
+# In the original model proposed by Branin, there are 3 global minima
+# with the same global optimum value
+# f*  = 0.39788736
+# x1* = (-pi,12.275), x2* = (pi,2.275), x3* = (3*pi,2.475)
+# The unique solution x*=(pi,2.275) is guaranteed by the constraint
+# UniqueSoln (added by Janos D. Pinter)
+
+param pi := 4*atan(1);
+
+var x{1..2};
+
+minimize ObjFct: (x[2] - 5.1*x[1]^2/(4*pi*pi) + 5*x[1]/pi - 6)^2
+	             + 10*(1 - 1/(8*pi))*cos(x[1]) + 10;
+
+s.t. Box1: -5 <= x[1] <= 10;
+
+s.t. Box2:  0 <= x[2] <= 15;
+
+s.t. UniqueSoln: x[1]+x[2] <= 6;
+
+option solver lgo;
+
+solve;
+
+# Display results in command window
+display ObjFct;
+display _varname, _var;
+display _conname, _con.slack;
+
+One can invoke AMPL to solve this model by the command
+
+ampl: model branin.mod;
+
+This leads to the following summary result displayed in the AMPL IDE
+command window.
+
+LGO 2014-12-04: Feasible solution from global search;
+function evaluation limit reached
+(affected by g_maxfct = 1250).
+Objective 0.3978873577
+2500 function and constraint evaluations.
+Maximum constraint violation 0
+Runtime = 0 seconds
+ObjFct = 0.397887
+
+: _varname    _var      :=
+1   'x[1]'   3.14159
+2   'x[2]'   2.275
+;
+
+:    _conname  _con.slack    :=
+1   Box1         6.85841
+2   Box2         2.275
+3   UniqueSoln   0.583407
+;
+
+Let us point out that in the above summary result LGO's default (most
+thorough, and - as a rule, especially when solving difficult models -
+most successful) global solver mode has been applied. This solver option
+leads to global scope search before switching to local search. There
+are also two other global search options which can precede local search.
+These can serve as alternative optimization strategies, used as needed
+in difficult models.
+
+The local search option of LGO on its own handles uni-modal (e.g. convex,
+or quasi-convex) and even mildly non-convex models. As a rule, local
+search on its own requires significantly less search effort (in terms of
+the number of model objective and constraint function evaluations used
+by LGO).
+
+Note furthermore that LGO uses direct model function evaluations, also
+to approximate gradients (this is done only in its local search mode).
+We plan to use also other methods available in AMPL to calculate gradients.
+However, the currently used approach supports also the invocation and use
+of arbitrary - including non-smooth, and even external black box - model
+functions.
+
+Let us also remark that the 'Maximum constraint violation 0' message
+appears only when the model includes some general constraint(s) such as
+UniqueSoln above. The value 0 or a sufficiently small value indicates
+that the solution found is numerically feasible. There is no need to
+display such a message in (merely) box-constrained models, since the
+variable range constraints are automatically satisfied by LGO's search
+methods.
+
+Users can also send results to a designated text output file such as
+branin1lgo.out as shown below by the commands added to branin1.mod:
+
+# Send results to output file
+display ObjFct >> braninlgo.out;
+display _varname, _var >> braninlgo.out;
+display _conname, _con.slack >> braninlgo.out;
+
+If you wish to solve another model next, then it is advisable to issue
+the command
+
+reset;
+
+in order to avoid the possible mix-up of model component definitions
+between the previous and current (to be solved) models.
+
+For example, the next AMPL commands solve the model goldstein1: this
+model can be also found in the GOMODELS directory.
+
+ampl: reset;
+ampl: model goldstein1.mod;
+ampl: solve;
+
+Let us note that the solver option lgo will be used again, until changed
+directly in the model code, or by an AMPL command of the given AMPL
+session.
+
+This leads to the following summary result displayed in the command
+window:
+
+LGO 2014-12-04: Feasible solution from global search;
+function evaluation limit reached
+(affected by g_maxfct = 800).
+Objective 3
+1603 function evaluations.
+Runtime = 0 seconds
+ObjFct = 3
+
+More details can be obtained again by using display commands as shown
+above. For brevity, only the added results are shown below.
+
+: _varname       _var        :=
+1   'x[1]'   -1.84653e-07
+2   'x[2]'   -1
+;
+
+:_conname _con.slack    :=
+;
+
+Notice that here we receive an empty list of constraints, since the box
+constraints were simply defined as variable bounds (see the model)
+
+var x{1..2} <= 2, >= -2;
+
+Let us point out that without using the ampl: reset command, one may
+receive a somewhat different result summary if the same model is
+re-solved, since in a re-run of the solver within the same AMPL session
+it will use the best solution found before (in that session). This is
+expected to lead only to smaller numerical differences and perhaps to
+a reduced calculation effort, if LGO is still used in the same (global
+scope search based) default operational mode.
+
+If the "option reset_initial_guesses 1;" command is given (once) or a
+reset command is used after each run, then - for the same model
+and using the same solver option settings - identical results will be
+received in each solver run.
+
+Here are two further examples from GOMODELS:
+
+ampl: reset;
+ampl: model camel1.mod;
+ampl: solve;
+
+LGO 2014-12-04: Feasible solution from global search;
+function evaluation limit reached
+(affected by g_maxfct = 1250).
+Objective -1.031628453
+2500 function and constraint evaluations.
+Maximum constraint violation 0
+Runtime = 0 seconds
+Obj = -1.03163
+
+: _varname     _var       :=
+1   'x[1]'    0.089842
+2   'x[2]'   -0.712656
+;
+
+:    _conname  _con.slack    :=
+1   UniqueSoln  0.802498
+;
+
+ampl: reset;
+ampl: model griewank1.mod;
+ampl: solve;
+
+LGO 2014-12-04: Feasible solution from global search;
+function evaluation limit reached
+(affected by g_maxfct = 800).
+Objective 0
+1601 function evaluations.
+Runtime = 0 seconds
+Obj = 0
+
+: _varname      _var        :=
+1   'x[1]'   1.45216e-12
+2   'x[2]'   3.11743e-13
+;
+
+:_conname _con.slack    :=
+;
+
+
+5) The Need for Global (vs. Local) Optimization
+
+High-quality local nonlinear solver engines - such as KNITRO, LOQO,
+MINOS, or SNOPT - as a rule, do an excellent job when solving uni-modal
+nonlinear optimization problems. The same solvers also may do a good
+job when solving mildly non-convex models - especially so when a
+useful initial solution guess can be supplied to the solver.
+
+However, we may not know in advance how difficult or 'how non-convex'
+a brand new or previously unseen nonlinear model is, and a 'sufficiently
+good' solution guess simply may not be available. In such cases, it is
+advisable to use a global scope search approach and a corresponding
+solver option. The following small-scale, but already non-trivial
+examples serve to illustrate this point.
+
+The first example presented here is called jdp1.mod (from the GOMODELS
+library). For brevity, we skip the optional display statements
+discussed above, and present only the model with some explanatory
+comments.
+
+# jdp1.mod
+# An illustrative global optimization model from the GOMODEL Library
+# AMPL code development by Janos D. Pinter
+# 2015-01-08
+
+# Key model characteristics
+# Number of variables: 1
+# Number of (lower and upper) bound constraints: 2
+# Number of general constraints: 0
+# Objective function: nonconvex
+
+# Global solution:
+# Optimum value:          f* = -2.85006480
+# Optimal argument value: x* = 17.29903524
+
+# Variables
+var x{1..1}; # 1-variable model
+
+# Objective function
+minimize ObjFct: log(x[1])*sin(x[1]);
+
+# Bound constraint[s]
+s.t. Box1: 1 <= x[1] <= 20;
+
+# General constraints
+# s.t. ... Absent
+
+# Solver settings
+option solver lgo;
+
+# Solve model;
+solve;
+
+ampl: model jdp1.mod;
+LGO 2014-12-04: Feasible solution from global search;
+function evaluation limit reached
+(affected by g_maxfct = 450).
+Objective -2.8500648
+901 function evaluations.
+Runtime = 0 seconds
+ObjFct = -2.85006
+
+If we use solver MINOS instead of LGO, then it returns the (suboptimal)
+solution x=1, f(1)=0. The same happens when we invoke the solvers KNITRO
+or SNOPT, while LOQO reports an evaluation error at the initial solution.
+
+Needless to say, this 'negative performance' due to the stated local
+search scope (mandate) of these solver options: hence, it is definitely
+not cited here as a deficiency in itself. In fact, LGO's local solver
+option would also fail to find the global optimum - unless started from
+a 'sufficiently good' solution guess... However, this model example
+indicates the advantages of using a global solver when such need arises.
+
+The second example presented here is a 3-variable constrained nonlinear
+optimization model with a non-smooth objective function: for more details,
+see jdp3.mod in the GOMODELS directory.
+
+The presence of general non-convex constraints often causes difficulties
+for local solvers, even if the objective happens to be a linear or convex
+function.
+
+For brevity, only the core model formulation is cited below.
+
+# jdp3.mod
+# An illustrative global optimization model from the GOMODEL Library
+
+# Variables and bounds
+var x in [1,8];
+var y in [2,5];
+var z in [3,10];
+
+# Objective function
+minimize objective: abs(x^2 + y^2 - z^2);
+
+# Constraints
+s.t. eq1: x^2 + y^2 + z^2 + x - y - z - 44 == 0;
+s.t. eq2: x*y*z + x*y - 3*x - y - 2*z - 49 == 0;
+s.t. eq3: x*z + 2*x*y + x + z - 47 <= 0;
+
+Using, e.g., the solver MINOS, we receive
+
+# MINOS 5.51: infeasible problem (or bad starting guess).
+objective = 6.33862
+: _varname    _var
+1   x        3.56759
+2   y        5
+3   z        5.60259
+: _conname  _con.slack    :=
+1   eq1       -18.0817
+2   eq2       -41.8687
+3   eq3       -17.8338
+;
+
+Using LGO in its default global solver mode, the correct (global)
+solution is obtained.
+
+objective = 3.79785e-12
+: _varname _var
+1   x        3.0000000000
+2   y        4.0000000000
+3   z        5.0000000000
+: _conname   _con.slack     :=
+1   eq1     -6.6791e-13
+2   eq2     -8.66862e-13
+3   eq3     -7.10543e-15
+;
+
+Again, this - still rather simple - example points towards the potential
+need for global scope search in many applications of nonlinear optimization.
+
+Further global optimization model examples are available in the GOMODELS
+collection. Model suggestions (preferably in coded form) are welcome and all
+adapted models will be properly acknowledged. (Models will be added on an
+ongoing basis, at the discretion of Pinter Consulting Services.)
+
+Let us mention again that numerous further examples - including real-world
+case studies by LGO users - are discussed by Pinter (1996, 2002, 2006, 2009),
+and in many other professional publications. The LGO manual (Pinter Consulting
+Services, 2014) also cites a range of LGO applications.
+
+
+6) LGO Option Settings
+
+Users can control LGO operations by setting the AMPL environment variable
+lgo_options appropriately. This can be done either by using AMPL's option
+command, or by using the shell's set and export commands before you invoke
+AMPL. The resulting settings will override the default solver options.
+
+To see first all current options and their possible changes, invoke the
+command lgo -= (as shown) in the AMPL command window or in the scrolling
+window (sw) environment.
+
+In the command window of the AMPL IDE, type
+
+ampl: shell 'lgo -=';
+
+Currently, this command returns the following output (slightly edited for
+better readability and consistency):
+
+con_tol   max. constraint violation in local search;
+          default setting: con_tol = 1e-8
+
+fi_tol    local search merit function precision improvement target;
+          default setting: fi_tol = 1e-8
+
+flog      name of log file for function evaluations (debug option);
+          default setting: flog = <BLANK> (file not written)
+
+g_maxfct  factor affecting max. merit function evals in global phase.
+          The limit is often 2*g_maxfct but may be more when the starting
+          point is infeasible.
+          default setting: g_maxfct = 50*(m+n+2)^2, in which
+          n = _snvars (number of decision variables the solver sees)
+          and m = _sncons (number of constraints the solver sees).
+
+g_target  global search target objective function value;
+          default setting: g_target = -1e10
+          (by assumption, this value can not be attained in a realistic
+          model; if a more precise bound is available then it can be
+          useful to set g_target accordingly)
+
+irngs     random number seed for LGO's built-in random-number generator
+          default setting: irngs = 0
+
+kt_tol    local Kuhn-Tucker optimality tolerance;
+          default setting: kt_tol = 1e-8
+
+l_maxfct  max. merit function evals in global phase;
+          default setting: l_maxfct = 50*(m+n+2)^2,
+          with m and n as for g_maxfct
+
+l_target  local search target objective function value;
+          default setting: l_target = -1e10
+          (see related note at g_target)
+
+lbound    lower bound imposed on variables unbounded below:
+          change -Infinity <= x <= U to min(0,U) + lbound <= x <= U;
+          default setting: lbound = -1e4
+          (set more informative values whenever available)
+
+logfile   name of log file written when outlev >= 3
+          default setting: logfile = "LGO.LOG"
+
+maxnosuc  limit on global phase merit evals without improvement;
+          default setting: maxnosuc = 50*(m+n+2)^2,
+          with m and n as for g_maxfct
+
+objno     objective number:
+          default setting: objno = 1
+
+objrep    Whether to replace
+                minimize obj: v;
+          with
+                minimize obj: f(x)
+          when variable v appears linearly
+          in exactly one constraint of the form
+                s.t. c: v >= f(x);
+          or
+                s.t. c: v == f(x);
+          Possible objrep values:
+          0 = no
+          1 = yes for v >= f(x)
+          2 = yes for v == f(x)
+          3 = yes in both cases (default)
+
+opmode    synonym for "search" (see below)
+
+outfile   name of file written when outlev >= 2
+          default setting: outfile = "LGO.OUT"
+
+outlev    output level:
+                0 ==> no output
+                1 ==> write sumfile (summary result file)
+                2 ==> also outfile  (more detailed result file)
+                3 ==> also logfile  (all model function arguments
+                                     and resulting function values)
+          default setting: outlev = 0
+
+penmult   constraint penalty multiplier;
+          default setting: penmult = 1.0
+
+search    search kind:
+                0 = only local scope optimization done
+                1 = global branch-and-bound + local optimization
+                2 = global adaptive random  + local optimization
+                3 = multi-start + local optimization
+          default setting: search = 3
+
+sumfile   name of summary file written when outlev >= 1
+          default setting: sumfile = "LGO.SUM"
+
+timelim   time limit (maximal allowed LGO runtime) in seconds;
+          default setting: timelim = 300
+
+timing    report I/O and solution times: 1 = stdout, 2 = stderr, 3 = both
+		  default setting: timing = 1
+
+ubound    upper bound imposed on variables unbounded above:
+          change L <= x <= Infinity to L <= x <= max(L,0) + ubound;
+          default setting: ubound = 1e4
+          (set more informative values whenever available)
+
+wantsol   solution report without -AMPL: sum of
+                1 ==> write .sol file
+                2 ==> print primal variable values
+                4 ==> print dual variable values
+                8 ==> do not print solution message
+          default setting: wantsol = 8
+
+To summarize the discussion og AMPL-LGO options, their complete set
+is shown below, together with their default settings:
+
+LGO Options Summary
+
+con_tol  = 1e-8
+fi_tol   = 1e-8
+flog     = <BLANK>
+g_maxfct = 50*(m+n+2)^2
+g_target = -1e10
+irngs    = 0
+kt_tol   = 1e-8
+l_maxfct = 50*(m+n+2)^2
+l_target = -1e10
+lbound   = -1e4
+logfile  = "LGO.LOG"
+maxnosuc = 50*(m+n+2)^2
+objno    = 1
+objrep   = 3
+opmode   = 3 (LGO internal name for option search)
+outfile  = "LGO.OUT"
+outlev   = 0
+penmult  = 1
+search   = 3 (identical with opmode)
+sumfile  = "LGO.SUM"
+timelim  = 300
+timing   = 1
+ubound   = 1e4
+wantsol  = 8
+
+Although the default option settings are expected to be appropriate
+(often seemingly even a bit too cautious) to handle many nonlinear
+models, due to the vast range and significant variety of such models
+this may not always be the case. One can think of the fact that
+general local optimization procedures (theoretically) require an
+infinite algorithmic search procedure; the same applies (theoretically,
+on a higher level of complexity) to the entire field of global
+optimization.
+
+LGO's solver options can be directly overwritten, if deemed necessary
+when solving difficult models. In such cases, we recommend using larger
+values for g_maxfct, l_maxfct and maxnosuc, if we aim for better results
+than the solution found by using default solver settings. To handle
+difficult models, it may be useful also to change irngs, since this
+will lead to generating partially different search point sequences.
+The parameter tlimit can also be increased to allow for longer LGO
+runs.
+
+Let us also emphasize that good modeling practices can greatly assist
+LGO, as well as other solvers. For example, the lbound and ubound
+values should be set as tightly as it is reasonable (in order to
+restrict the search domain, with a potentially huge reduction of
+the required search effort). Similarly, if we are able to give
+meaningful values for g_target and l_target then their use may help
+to produce numerical solutions with less computational effort.
+
+In order to change some LGO solver options, one can put one or more
+(white-space separated) phrases in $lgo_options, setting for example:
+
+option lgo_options 'opmode = 0 l_maxfct=1000';
+
+To illustrate, we will solve the Branin model introduced earlier, but
+now we want to use only LGO's local search, by setting opmode = 0 or
+search = 0.
+
+Adding to the model code (or at the command level in an AMPL session
+where LGO is used)
+
+option lgo_options 'opmode = 0';
+
+now we receive the following results
+
+ampl: reset;
+ampl: model branin1.mod;
+LGO: opmode = 0
+
+LGO 2014-12-04: Feasible solution from local search.
+Objective 0.3978873577
+103 function and constraint evaluations.
+Maximum constraint violation 0
+Runtime = 0 seconds
+
+ObjFct = 0.397887
+
+: _varname    _var      :=
+1   'x[1]'   3.14159
+2   'x[2]'   2.275
+;
+
+:    _conname  _con.slack    :=
+1   Box1         6.85841
+2   Box2         2.275
+3   UniqueSoln   0.583407
+;
+
+Notice that the solution received is, in fact, globally optimal. This
+may well be the case in many 'mildly non-convex' nonlinear models
+(especially since LGO's local search mode is optionally supplemented by
+a quick global presolver mode).
+
+In general it is always advisable to use a global scope search option -
+unless either we know that the optimization model is uni-modal (e.g.,
+it has a provably convex structure), and/or we have a sufficiently high
+quality initial solution estimate which can be directly used to find the
+global optimum.
+
+In difficult models, it may also be advisable to conduct runs with various
+solver choices (if available). To illustrate this point, consider the
+model cited below in a concise form, without added comments  (cf. jdp4.mod
+in the GOMODELS directory):
+
+# jdp4.mod;
+var x in [-5,5];
+var y in [-5,5];
+minimize obj: sin(x^2 - y^2);
+s.t. c1: y^2 + cos(x-y) >= 0.5;
+s.t. c2: x*(y + sin(y)) == 2;
+
+Again, LGO finds the global solution in local search mode, see below.
+(The global optimality of this solution can be directly verified by
+inspection; there could be also other global solutions.)
+
+ampl: model jdp4.mod;
+LGO: opmode = 0
+LGO 2014-12-04: Feasible solution from local search.
+Objective -1
+172 function and constraint evaluations.
+Maximum constraint violation 1.36e-12
+Runtime = 0 seconds
+
+objective = -1
+
+: _varname     _var       :=
+1   x        -0.804509
+2   y        -1.48931
+;
+
+: _conname   _con.slack     :=
+1   c1       2.49258
+2   c2      -1.35691e-12
+;
+
+If we use e.g. solver MINOS instead, then we receive a locally optimal
+solution:
+
+ampl: model jdp4.mod;
+MINOS 5.51: optimal solution found.
+9 iterations, objective -0.1746391562
+Nonlin evals: obj = 21, grad = 20, constrs = 21, Jac = 20.
+objective = -0.174639
+
+: _varname     _var      :=
+1   x        1.89948
+2   y        0.539345
+;
+
+: _conname   _con.slack     :=
+1   c1       0
+2   c2      -2.22045e-16
+;
+
+We also tested several other (local nonlinear) solvers on this example
+model: all tested solvers failed to find the global solution.
+
+Notice that there could be multiple global (as well as local) optima
+in this model. These can be found iteratively by excluding all previously
+found solutions using additional constraints: we will not discuss the
+related modeling details here.
+
+The above small-scale example demonstrates again that it can be useful
+to use several solvers - including also global scope solver options -
+when tackling multi-modal or other difficult nonlinear models.
+
+
+7) LGO Return Values
+
+Here we present and briefly discuss the solve_result_num values that LGO
+can return within an AMPL session, along with the associated solve_message.
+
+Value  	Message
+
+0	Feasible solution from global search
+100     Feasible solution from local search
+120	Feasible solution <= l_target
+110	Feasible solution <= g_target
+200	Infeasible problem
+300	Unbounded objective
+400	Intermediate solution
+410	A partition got too small
+420	Too many MS cycles with little improvement
+510	Interrupted by control-C (SIGINT)
+520	Problem too large
+
+The above values may be incremented by 1, 2, 3, 4, or 5:
+
+1	Maximum number of active partition subsets reached (set internally)
+2	Function evaluation limit (by default, 2*g_maxfct) reached
+3	Maximum local search function evaluation limit (l_maxfct) reached
+4	Time limit (timelim) reached
+5	No objective improvement in maxnosuc global search steps
+
+Several remarks concerning these return messages follow.
+
+1. First of all, let us re-emphasize the fact that solving a nonlinear -
+even a local, and much more so a global - optimization problem
+theoretically requires an infinite number of iterations.
+
+Hence, for example the solve_message
+
+"Feasible solution from global search;
+function evaluation limit reached"
+
+practically means that the reported solution has been found by a seamless
+combination of global and local scope searches conducted by LGO, using
+the given option settings. Therefore the result returned by LGO is expected
+to be a global search based high-quality feasible solution that meets at
+least the local optimality conditions. Under normal circumstances - except
+in difficult models - the solution referred to above is actually the global
+optimum. This statement is generally valid, assuming suitably chosen solver
+option settings, without some unexpected failure caused by the model itself,
+or some numerical issue.
+
+This has been practically verified by solving many thousands of test problems
+and real-world challenges by LGO. Note however that there is no theoretical
+or even numerical guarantee that LGO - or any other NLO solver - will handle
+'all possible' nonlinear models successfully, when using a limited set of
+options with 'default' or 'arbitrary' user-defined settings. (Recall the
+solver limitations demonstrated on very small-size, yet already non-trivial
+models, as discussed earlier in this document.)
+
+2. Analogously to remark 1, the message "Feasible solution from local search"
+means that the solution has been found by LGO's local scope search - again,
+with given option settings. With suitable settings (and keeping in mind
+similar caveats to those given in remark 1), the result returned by LGO is
+expected to be at least a local search based feasible solution. In many
+optimization problems - but definitely not always - even the global solution
+can be found by using LGO's local search option initiated from a reasonable
+starting point.
+
+3. The message "Unbounded objective" indicates some model related error,
+since under the stated analytical assumptions regarding model (1)-(2)
+this situation should never occur.
+
+4.  The message "Infeasible problem" also could indicate some model
+related error, since under the stated analytical assumptions regarding
+model (1)-(2) this situation should not occur. In practice, it could
+happen however that an actual model does not meet the postulated
+feasibility requirement indeed. To check whether this is the case
+indeed, it may be advisable to allocate a significant search effort
+and then to re-run the solver without considering the objective function,
+in order to find just a feasible solution. Of course, the model itself
+should also be verified; and it could also happen that the solver fails
+to find a feasible solution in some unusually difficult problem - at least
+within the resources allocated to the solver to handle the problem.
+
+5. The "Interrupted by control-C (SIGINT)" feature is supported by all
+AMPL solver platforms.
+
+
+8) Technical Support
+
+AMPL-LGO is supported regarding its basic functionality and integration
+with AMPL by AMPL Optimization, contact: support@ampl.com.
+
+The core LGO solver suite is supported by Pinter Consulting Services and
+its developer partners.
+
+Contact: Janos D. Pinter, PhD, DSc
+Pinter Consulting Services, Inc.
+Email: janos.d.pinter@gmail.com
+Web: http://www.pinterconsulting.com/
+
+
+9) Illustrative References
+
+AMPL Optimization, Inc. (2014) The AMPL Modeling System. See www.ampl.com.
+
+Fourer, R. Gay, D.M. and Kernighan, B.W. (2003) AMPL: A Modeling Language
+for Mathematical Programming. (Second Edition) Brooks/Cole-Thomson
+Learning, Pacific Grove, CA.  See ampl.com/resources/the-ampl-book/ .
+
+Pinter, J.D. (1996) Global Optimization in Action. Kluwer Academic
+Publishers, Dordrecht. (Now distributed by Springer Science + Business
+Media, New York)
+
+Pinter, J.D. (2002) Global optimization: software, test problems, and
+applications. In: Pardalos, P. M. and Romeijn, H. E., Eds. Handbook of
+Global Optimization, Volume 2, pp. 515-569. Kluwer Academic Publishers,
+Dordrecht, 2002. (Now distributed by Springer Science + Business Media,
+New York)
+
+Pinter, J.D., Ed. (2006) Global Optimization - Scientific and Engineering
+Case Studies. Springer Science + Business Media, New York.
+
+Pinter, J.D. (2009) Software development for global optimization. In:
+Pardalos, P.M. and T. F. Coleman, eds. Global Optimization: Methods and
+Applications, pp. 183-204. Fields Institute Communications Volume 55.
+Published by the American Mathematical Society, Providence, RI, 2009.
+
+Pinter Consulting Services, Inc. (2014) LGO - A Model Development and Solver
+System for Global-Local Nonlinear Optimization. User's Guide. (Available
+upon request by licensed AMPL-LGO users) www.pinterconsulting.com.
+

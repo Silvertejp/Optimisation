@@ -1,0 +1,24 @@
+## This file contains script commands for solving an optimization model
+
+## Load the model
+model Belgium.mod;
+
+## Load the data
+data Belgium.dat;
+
+## III 1
+##let slo["Voeren"]:=0.8*slo["Voeren"];
+##let sup["Voeren"]:=0.8*sup["Voeren"];
+
+## 
+
+## Choose solver
+option solver "ampl_linux-intel32/snopt";
+
+## Solve the model
+solve;
+
+## Display results
+display f,c2,pi;
+display s;
+display Active_Arc["Warnant","Sinsin"].dual;
